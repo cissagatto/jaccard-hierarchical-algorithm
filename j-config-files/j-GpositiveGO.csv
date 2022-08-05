@@ -1,0 +1,7 @@
+Config, Value
+Dataset_Path, ~/jaccard/Datasets
+Temporary_Path, /dev/shm/j-GpositiveGO
+dataset_name, GpositiveGO
+number_dataset, 42
+number_folds, 10
+number_cores, 1
