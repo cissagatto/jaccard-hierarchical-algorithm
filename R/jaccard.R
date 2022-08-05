@@ -226,7 +226,7 @@ print(system(paste("rm -r ", diretorios$folderDatasets, sep="")))
 # cat("\n# Copy to google drive                                      #")
 # cat("\n####################################################################\n\n")
 # destino = paste("nuvem:Jaccard-Cut/", dataset_name, sep="")
-# origem = paste(diretorios$folderReports, "/Partitions", sep="")
+# origem = diretorios$folderResults
 # comando = paste("rclone -P copy ", origem, " ", destino, sep="")
 # cat("\n", comando, "\n")
 # a = print(system(comando))
