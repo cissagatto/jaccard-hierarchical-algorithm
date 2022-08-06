@@ -69,7 +69,7 @@ args <- commandArgs(TRUE)
 # from csv file                                                               #
 ###############################################################################
 
-#config_file = "/home/cissa/jaccard/j-config-files/j-emotions.csv"
+#config_file = "~/jaccard/j-config-files/j-GpositiveGO.csv"
 
 config_file <- args[1]
 
@@ -213,6 +213,7 @@ timeFinal <- system.time(results <- executeJ(ds,
                                                number_cores, 
                                                number_folds, 
                                                folderResults))
+
 print(timeFinal)
 result_set <- t(data.matrix(timeFinal))
 setwd(diretorios$folderReports)
@@ -226,7 +227,7 @@ print(system(paste("rm -r ", diretorios$folderDatasets, sep="")))
 # cat("\n# Copy to google drive                                      #")
 # cat("\n####################################################################\n\n")
 # destino = paste("nuvem:Jaccard-Cut/", dataset_name, sep="")
-# origem = diretorios$folderResults
+# origem = diretorios$folderReports
 # comando = paste("rclone -P copy ", origem, " ", destino, sep="")
 # cat("\n", comando, "\n")
 # a = print(system(comando))

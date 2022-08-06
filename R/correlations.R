@@ -26,6 +26,8 @@
 FolderRoot = "~/jaccard"
 FolderScripts = "~/jaccard/R"
 
+#cores = seecol(pal_unikn_pref, 200)
+
 
 ############################################################################
 # FUNCTION COMPUTE JACCARD                                                 #
@@ -220,7 +222,8 @@ CutreeHClust <- function(ds,
     
     diretorios = directories(dataset_name, folderResults)
     
-    #cat("\nCreate DataFrames\n")
+    ########################################################################
+    # TODOS OS MÉTODOS
     fold = c(0)
     average = c(0)
     complete = c(0)
@@ -230,11 +233,44 @@ CutreeHClust <- function(ds,
     wardD2 = c(0)
     c4 = data.frame(fold, average, complete, mcquitty, single, wardD, wardD2)
     
+    
+    ########################################################################
+    # APENAS OS COEFICIENTES
     fold = c(0)
     metodo = c(0)
     coeficiente = c(0)
     coefHC = data.frame(fold, metodo, coeficiente)
     
+    
+    #####################################################################
+    # TODAS AS PARTIÇÕES COM RÓTULOS
+    num.fold = c(0)
+    num.part = c(0)
+    num.group = c(0)
+    metodo.name = c("")
+    names.labels = c(0)
+    AllPartitions = data.frame(num.fold, num.part, num.group, 
+                               names.labels, metodo.name)
+    
+    
+    #####################################################################
+    # FREQUENCIA
+    num.fold = c(0)
+    metodo.name = c("")
+    num.part = c(0)
+    num.group = c(0)
+    frequencia = c(0)
+    final = data.frame(num.fold, num.part, num.group, frequencia, metodo.name)
+    
+    #####################################################################
+    # RESUMO DA PARTIÇÃO
+    num.fold = c(0)
+    metodo.name = c("")
+    num.part = c(0)
+    num.group = c(0)
+    resumePartitions = data.frame(num.fold, num.part, num.group, metodo.name)
+    
+    #####################################################################
     # methods
     metodos = c("average", "complete", "mcquitty", "single", "ward.D", "ward.D2")    
     
@@ -243,6 +279,9 @@ CutreeHClust <- function(ds,
     # created folder for the split
     FolderHClust = paste(diretorios$folderPartitions, "/Split-", s, sep="")
     if(dir.exists(FolderHClust)==FALSE){dir.create(FolderHClust)}
+    
+    #FolderOS = paste(diretorios$folderOutputDataset, "/Split-", s, sep="")
+    #if(dir.exists(FolderOS)==FALSE){dir.create(FolderOS)}
     
     #cat("\nOpen matrix correlation\n")
     setwd(FolderHClust)
@@ -268,6 +307,12 @@ CutreeHClust <- function(ds,
       #cat("\nCreates the folder to save clusters\n")                  
       FolderClusters = paste(FolderMethods, "/Clusters", sep="")
       if(dir.exists(FolderClusters)==FALSE){dir.create(FolderClusters)}
+      
+      FolderMOS = paste(diretorios$folderOutputDataset, "/", metodos[i], sep="")
+      if(dir.exists(FolderMOS)==FALSE){dir.create(FolderMOS)}
+      
+      FolderSMOS = paste(FolderMOS, "/Split-", s, sep="")
+      if(dir.exists(FolderSMOS)==FALSE){dir.create(FolderSMOS)}
       
       #cat("\nDEND\n")                  
       Dend <- matrix_correlation_2 %>% as.dist %>% hclust(method = metodos[i]) %>% as.dendrogram
@@ -334,42 +379,134 @@ CutreeHClust <- function(ds,
       dev.off()
       cat("\n")     
       
-      ############################################################### 
-      #cat("\nClustering: from the first to the last label\n")                  	  
-      clusters3 = data.frame(c(0))
-      tables = data.frame()
+      #####################################################################
+      group = c(0)
+      label = c(0)
+      allPartitions2 = data.frame(label, group)
+      
+      fold = c(0)
+      partition = c(0)
+      num.groups = c(0)
+      grupos_por_particao = data.frame(fold, partition, num.groups)
       
       k = 1
       for(k in 1:ds$Labels){
-        
-        cat("\n===============")
         cat("\ncluster: ", k)   
         
-        setwd(FolderClusters)
+        FolderPOS = paste(FolderSMOS , "/Partition-", k, sep="")
+        if(dir.exists(FolderPOS)==FALSE){dir.create(FolderPOS)}
         
-        #cat("\nCUTREE\n")        
+        group = c(0)
+        label = c("")
+        clusters3 = cbind(group, label)
+             
         cutLabels = cutree(HC, k)
         clusters = data.frame(cutree(HC, k))
         names(clusters) = "grupo"
-        rotulos = c(rownames(clusters))
+        label = c(rownames(clusters))
+        
+        group = c(clusters$grupo)
+        label = label
+        clusters3 = data.frame(group, label)
         
         #cat("\nSAVE CUTREE\n")
-        write.csv(clusters, paste("cluster_", k, ".csv", sep=""))		
+        setwd(FolderClusters)
+        write.csv(clusters3, paste("partition-", k, ".csv", sep=""), 
+                  row.names = FALSE)		
         
-        clusters3 = cbind(clusters3, clusters$grupo)
-        names(clusters3)[k+1] = paste("particao-",k, sep="")
+        setwd(FolderPOS)
+        write.csv(clusters3, paste("partition-", k, ".csv", sep=""), 
+                  row.names = FALSE)		
         
-        k = k + 1 # increment label
-        gc() # garbage collection
+        #cat("\nFrequencia")
+        frequencia1 = count(clusters3, clusters3$group)
+        names(frequencia1) = c("grupo", "frequencia")
         
-      } # fim dos clusters
+        freq = frequencia1
+        names(freq) = c("group", "totalLabels")
+        setwd(FolderPOS)
+        write.csv(freq, 
+                  paste("fold-", s, "-labels-per-group-partition-",
+                        k, ".csv", sep=""), 
+                  row.names = FALSE)	
+        
+        fold = s
+        partition = k
+        num.groups = k
+        teste = data.frame(fold, partition, num.groups)
+        grupos_por_particao = rbind(grupos_por_particao, teste)
+        
+        
+        num.fold = s
+        metodo.name = metodos[i]
+        num.part = k
+        num.group = frequencia1$grupo
+        frequencia = frequencia1$frequencia
+        final = rbind(final, data.frame(num.fold, num.part, 
+                                        num.group, frequencia, metodo.name))
+        
+        ############################################################################################################
+        # cat("\nData frame")
+        num.fold = s
+        metodo.name = metodos[i]
+        num.part = k
+        num.group = k
+        resumePartitions = rbind(resumePartitions, data.frame(num.fold, 
+                                                              num.part, 
+                                                              num.group,
+                                                              metodo.name))
+        
+        ############################################################################################################        num.fold = s
+        num.part = k
+        num.group = clusters3$group
+        metodo.name = metodos[i]
+        names.labels = clusters3$label
+        AllPartitions = rbind(AllPartitions, data.frame(num.fold, num.part, 
+                                                         num.group,
+                                                         names.labels,
+                                                        metodo.name))
+        
+        ############################################################################################################
+        nomesDosRotulos = clusters3$rotulos
+        group = clusters3$group
+        allPartitions2 = cbind(allPartitions2, group)
+        b = k + 2
+        names(allPartitions2)[b] = paste("partition-", k, sep="")
+        
+        k = k + 1 
+        gc()
+        
+      } # fim do cluster
       
-      #cat("\nSAVE ALL CUTREE\n")        
-      setwd(FolderMethods)
-      clusters4 = clusters3[,-1]
-      clusters5 = data.frame(rotulos, clusters4)
-      write.csv(clusters5, paste(metodos[i], "-partitions.csv", sep=""), 
-                row.names = FALSE)
+      allPartitions2 = allPartitions2[,c(-1,-2)]
+      
+      write.csv(allPartitions2, 
+                paste(FolderMethods, "/fold-", s, "-", metodos[i], 
+                      "-all-partitions.csv", sep=""), 
+                row.names = FALSE)  
+      
+      write.csv(allPartitions2, 
+                paste(FolderSMOS, "/fold-", s, 
+                      "-all-partitions.csv", sep=""), 
+                row.names = FALSE)  
+      
+      grupos_por_particao = grupos_por_particao[c(-1,-2),]
+      w = nrow(grupos_por_particao)
+      grupos_por_particao = grupos_por_particao[-w,]
+      
+      write.csv(grupos_por_particao, 
+                paste(FolderSMOS, "/fold-", s, 
+                      "-groups-per-partition.csv", sep=""), 
+                row.names = FALSE) 
+      
+      write.csv(grupos_por_particao, 
+                paste(FolderMethods, "/fold-", s, 
+                      "-groups-per-partition.csv", sep=""), 
+                row.names = FALSE) 
+      
+      print(system(paste("rm -r ", FolderSMOS, "/Partition-1", sep="")))
+      print(system(paste("rm -r ", FolderSMOS, "/Partition-", ds$Labels, sep="")))
+      
       
       i = i + 1 # increment hclust method
       gc() # garbage collection
@@ -381,8 +518,17 @@ CutreeHClust <- function(ds,
     write.csv(coefHC[-1,], paste("fold-", s, "-coeficientes.csv", sep=""), 
               row.names = FALSE)
     
+    write.csv(resumePartitions[-1,], 
+              paste(FolderHClust, "/fold-", s, "-groups-per-partition.csv", sep=""), 
+              row.names = FALSE)
+    
+    write.csv(final[-1,], 
+              paste(FolderHClust, "/fold-", s, "-frequency.csv", sep=""), 
+              row.names = FALSE)
+    
+    
     gc()
-  }
+  } # fim do fold
   
   gc()
   cat("\n##################################################################")
@@ -459,32 +605,76 @@ bestCoefficient <- function(ds,
     gc()
   }
   
-  setwd(diretorios$folderReports)
-  write.csv(todos, paste(dataset_name, "-All-Coefs.csv", sep=""), 
+  write.csv(todos, paste(diretorios$folderPartitions, "/", 
+                         dataset_name, "-All-Coefs.csv", sep=""), 
             row.names = FALSE)
   
-  setwd(diretorios$folderReports)
-  write.csv(primeiro, paste(dataset_name, "-1-Coefs.csv", sep=""), 
+  write.csv(primeiro, paste(diretorios$folderPartitions, "/", 
+                             dataset_name, "-1-Coefs.csv", sep=""), 
             row.names = FALSE)
   
-  setwd(diretorios$folderReports)
-  write.csv(segundo, paste(dataset_name, "-2-Coefs.csv", sep=""), 
+  write.csv(segundo,paste(diretorios$folderPartitions, "/", 
+                            dataset_name, "-2-Coefs.csv", sep=""), 
             row.names = FALSE)
   
-  setwd(diretorios$folderReports)
-  write.csv(terceiro, paste(dataset_name, "-3-Coefs.csv", sep=""), 
+  write.csv(terceiro, paste(diretorios$folderPartitions, "/", 
+                             dataset_name, "-3-Coefs.csv", sep=""), 
             row.names = FALSE)
   
-  setwd(diretorios$folderReports)
-  write.csv(quarto, paste(dataset_name, "-4-Coefs.csv", sep=""), 
+  write.csv(quarto, paste(diretorios$folderPartitions, "/", 
+                           dataset_name, "-4-Coefs.csv", sep=""), 
             row.names = FALSE)
   
-  setwd(diretorios$folderReports)
-  write.csv(quinto, paste(dataset_name, "-5-Coefs.csv", sep=""), 
+  write.csv(quinto, paste(diretorios$folderPartitions, "/", 
+                          dataset_name, "-5-Coefs.csv", sep=""), 
             row.names = FALSE)
   
-  setwd(diretorios$folderReports)
-  write.csv(sexto, paste(dataset_name, "-6-Coefs.csv", sep=""), 
+  write.csv(sexto, paste(diretorios$folderPartitions, "/", 
+                          dataset_name, "-6-Coefs.csv", sep=""), 
+            row.names = FALSE)
+  
+  a = data.frame(count(primeiro, primeiro$metodo))
+  colnames(a) = c("metodo", "total")
+  a = cbind(ordem = "1º.Lugar", a)
+  
+  b = data.frame(count(segundo, segundo$metodo))
+  colnames(b) = c("metodo", "total")
+  b = cbind(ordem = "2º.Lugar", b)
+  
+  c = data.frame(count(terceiro, terceiro$metodo))
+  colnames(c) = c("metodo", "total")
+  c = cbind(ordem = "3º.Lugar", c)
+  
+  d = data.frame(count(quarto, quarto$metodo))
+  colnames(d) = c("metodo", "total")
+  d = cbind(ordem = "4º.Lugar", d)
+  
+  e = data.frame(count(quinto, quinto$metodo))
+  colnames(e) = c("metodo", "total")
+  e = cbind(ordem = "5º.Lugar", e)
+  
+  f = data.frame(count(sexto, sexto$metodo))
+  colnames(f) = c("metodo", "total")
+  f = cbind(ordem = "6º.Lugar", f)
+  
+  all = rbind(a,b,c,d,e,f)
+  
+  write.csv(all, paste(diretorios$folderPartitions, "/", 
+                          dataset_name, "-best-frequency-methods.csv", sep=""), 
+            row.names = FALSE)
+  
+  final = cbind(primeiro, segundo, terceiro, quarto, quinto, sexto)
+  final = final[,c(-4,-7,-10,-13, -16)]
+  names(final) = c("fold", 
+                      "1º.Lugar", "1.coef", 
+                      "2º.Lugar", "2.coef",
+                      "3º.Lugar", "3.coef",
+                      "4º.Lugar", "4.coef",
+                      "5º.Lugar", "5.coef",
+                      "6º.Lugar", "6.coef")
+  
+  write.csv(final, paste(diretorios$folderPartitions, "/", 
+                       dataset_name, "-todos.csv", sep=""), 
             row.names = FALSE)
   
   
@@ -494,6 +684,316 @@ bestCoefficient <- function(ds,
   cat("\n##################################################################################################")
   cat("\n\n\n\n")
 }
+
+
+
+analisaParticoes <- function(ds,
+                            dataset_name,
+                            number_dataset, 
+                            number_cores, 
+                            number_folds, 
+                            folderResults,
+                            resLS,
+                            namesLabels){
+  
+  diretorios = directories(dataset_name, folderResults)
+  metodos = c("average", "complete", "mcquitty", "single", "ward.D", "ward.D2")    
+  FolderPart = paste(diretorios$folderReports, "/Partitions", sep="")
+  
+  todos = data.frame()
+  final_labels = data.frame()
+  final_groups = data.frame()
+  final_metodos = data.frame()
+  
+  rotulos2 = c()
+  
+  f = 1
+  while(f<=number_folds){
+    cat("\n\nFOLD:", f)
+    FolderSplit = paste(FolderPart, "/Split-", f, sep="")
+    num.part = ds$Labels - 1
+    
+    fold_labels = data.frame()
+    fold_groups = data.frame()
+    fold_metodos = data.frame()
+    
+    p = 2
+    while (p <= num.part) {
+      cat("\n\tPARTITION:", p)
+      
+      FolderP = paste(FolderSplit, "/Partition-", p, sep="")
+      if(dir.exists(FolderP)==FALSE){dir.create(FolderP)}
+      
+      apagar = c(0)
+      part_metodos = data.frame(apagar)
+      part_labels = data.frame(apagar)
+      part_groups = data.frame(apagar)
+      
+      rotulos = c()
+      grupos =c()
+      
+      m = 1
+      while (m <= length(metodos)) {
+        cat("\n\t\tMETODO:", metodos[m])
+        FolderMetodo = paste(FolderSplit, "/", metodos[m], sep = "")
+        FolderCluster = paste(FolderMetodo, "/Clusters", sep = "")
+        
+        setwd(FolderCluster)
+        res = data.frame(read.csv(paste("partition-", p, ".csv", sep = "")))
+        
+        groups = res$group
+        labels = res$label
+        
+        rotulos2 = labels
+        rotulos = labels
+        grupos = groups
+        
+        part_groups = cbind(part_groups, groups)
+        part_labels = cbind(part_labels, labels)
+        
+        #names(part_groups)[2] = toString(metodos[m])
+        #names(part_labels)[2] = toString(metodos[m])
+        
+        res2 = cbind(fold = f, partition = p,
+                     method = metodos[m], res)
+        todos = rbind(todos, res2)
+        
+        colnames(res)[1] = paste(metodos[m], ".groups", sep="")
+        colnames(res)[2] = paste(metodos[m], ".labels", sep="")
+        
+        part_metodos = cbind(part_metodos, res)
+        
+        rm(res)
+        m = m + 1
+        gc()
+      } # fim do método
+      
+      part_metodos = part_metodos[,-1]
+      part_labels = part_labels [,-1]
+      part_groups = part_groups[,-1]
+      
+      colnames(part_labels) = metodos
+      colnames(part_groups) = metodos
+      
+      part_labels = cbind(fold = f, partition = p, 
+                          groups = grupos, part_labels)
+      
+      part_groups = cbind(fold = f, partition = p, 
+                          labels = rotulos, part_groups)
+      
+      fold_groups = rbind(fold_groups, part_groups)
+      fold_labels = rbind(fold_labels, part_labels)
+      fold_metodos = rbind(fold_metodos, part_metodos)
+      
+      write.csv(fold_metodos, paste(FolderP, "/fold-", f, 
+                                    "-part-", p, "-groups-labels.csv", sep=""), 
+                row.names = FALSE)
+      
+      write.csv(fold_groups, paste(FolderP, "/fold-", f, 
+                          "-part-", p, "-groups.csv", sep=""), 
+                row.names = FALSE)
+      
+      write.csv(fold_labels, paste(FolderP, "/fold-", f, 
+                          "-part-", p, "-labels.csv", sep=""), 
+                row.names = FALSE)
+      
+      p = p + 1
+      gc()
+    } # fim das partições
+    
+    final_labels = rbind(final_labels, fold_labels)
+    final_groups = rbind(final_groups, fold_groups)
+    final_metodos = rbind(final_metodos , fold_metodos)
+    
+    f = f + 1
+    gc()
+  } # fim do fold
+  
+  write.csv(final_labels, paste(diretorios$folderPartitions, 
+                                "/all-labels.csv", sep=""), 
+            row.names = FALSE)
+  
+  write.csv(final_groups, paste(diretorios$folderPartitions, 
+                                "/all-groups.csv", sep=""), 
+            row.names = FALSE)
+  
+  write.csv(final_metodos, paste(diretorios$folderPartitions, 
+                                "/all-methods.csv", sep=""), 
+            row.names = FALSE)
+
+  
+  num.part = ds$Labels-1
+  cat("\n")
+  a = 2
+  while(a<=num.part){
+    cat("\nPARTITION: ",a)
+    res1 = filter(final_labels, final_labels$partition == a)
+    res2 = filter(final_groups, final_groups$partition == a)
+    setwd(diretorios$folderPartitions)
+    write.csv(res1, paste("all-partitions-", a, "-labels.csv", sep=""), 
+              row.names = FALSE)
+    write.csv(res2, paste("all-partitions-", a, "-groups.csv", sep=""), 
+              row.names = FALSE)
+    a = a + 1
+    gc()
+  }
+  
+  
+  b = 1
+  while(b<=ds$Labels){
+    #cat("\nB", b)
+    
+    rotulo = rotulos2[b]
+    
+    cat("\nLABEL:", rotulo)
+    
+    setwd(diretorios$folderPartitions)
+    grupos = data.frame(read.csv("all-groups.csv"))
+    
+    gr = filter(grupos, grupos$labels == rotulo)
+    gr = gr[order(gr$partition, decreasing = TRUE),]
+    
+    
+    setwd(diretorios$folderPartitions)
+    write.csv(gr, paste(rotulo, ".csv", sep=""), 
+              row.names = FALSE)
+   
+    todos = data.frame()
+    num.part = ds$Labels-1
+    
+    g = 2
+    while(g<=num.part){
+      
+      #cat("\nGROUP:", g)
+      
+      gr2 = filter(gr, gr$partition == g)
+      
+      av = data.frame(count(gr2, gr2$average))
+      colnames(av) = c("grupo", "total")
+      av = cbind(metodo = "average", av)
+      
+      cm = count(gr2, gr2$complete)
+      colnames(cm) = c("grupo", "total")
+      cm = cbind(metodo = "complete", cm)
+      
+      mc = count(gr2, gr2$mcquitty)
+      colnames(mc) = c("grupo", "total")
+      mc = cbind(metodo = "mcquitty", mc)
+      
+      sin = count(gr2, gr2$single)
+      colnames(sin) = c("grupo", "total")
+      sin = cbind(metodo = "single", sin)
+      
+      wd = count(gr2, gr2$ward.D)
+      colnames(wd) = c("grupo", "total")
+      wd = cbind(metodo = "wardD", wd)
+      
+      wd2 = count(gr2, gr2$ward.D2)
+      colnames(wd2) = c("grupo", "total")
+      wd2 = cbind(metodo = "wardD2", wd2)
+      
+      all = rbind(av, cm, mc, sin, wd, wd2)
+      all = cbind(partition = g, all)
+      
+      todos = rbind(todos, all)
+      
+      g = g + 1
+      gc()
+    }
+    
+    setwd(diretorios$folderPartitions)
+    write.csv(todos, paste(rotulo, "-frequency.csv", sep=""), 
+              row.names = FALSE)
+    
+    b = b + 1
+    gc()
+  }
+  
+  
+  cor = "#ed2131"
+  Folder = paste(diretorios$folderPartitions, "/Plots", sep="")
+  if(dir.exists(Folder)==FALSE){dir.create(Folder)}
+  setwd(Folder)
+  pdf("label-distribution.pdf", width = 10, height = 7)
+  op <- par(mar = c(2.5, 2.5, 2.5, 2.5), oma=c(1.5,1.5,1.5,1.5))
+  par(mfrow = c(ds$Labels,ds$Labels))
+    b = 1
+    while(b<=ds$Labels){
+      rotulo = rotulos2[b]
+      setwd(diretorios$folderPartitions)
+      grupos = data.frame(read.csv("all-groups.csv"))
+      gr = filter(grupos, grupos$labels == rotulo)
+      gr = gr[order(gr$partition, decreasing = TRUE),]
+      num.part = ds$Labels-1
+      g = 2
+      while(g<=num.part){
+        gr2 = filter(gr, gr$partition == g)
+        plot(gr2$average, type="b" , lwd=2 , col=cor, 
+             ylab="Groups" , xlab="Folds" , 
+             main=paste(rotulo, " partition-", g, sep=""),
+             bty="l" , pch=20 , cex=1, cex.main=0.7,
+             cex.axis = 0.6, mgp = c(1.5, 0.5, 0), cex.lab = 0.7,
+             xlim = c(1, 10), ylim = c(1, g), )
+        #abline(h=seq(0,100,10) , col=cor, lwd=0.1)  
+        g = g + 1
+        gc()
+      }
+      b = b + 1
+      gc()
+    }
+  par(op)
+  print(par(op))
+  dev.off()
+  cat("\n")
+  
+  
+  cat("\n\n#########################################################")
+  cat("\n# FIM ANALISA PARTICOES                                   #")
+  cat("\n###########################################################\n\n")
+  
+  gc()
+}
+
+
+separaBests <- function(ds,
+                            dataset_name,
+                            number_dataset, 
+                            number_cores, 
+                            number_folds, 
+                            folderResults,
+                            resLS,
+                            namesLabels){
+  
+  diretorios = directories(dataset_name, folderResults)
+  
+  setwd(diretorios$folderPartitions)
+  best = data.frame(read.csv(paste(dataset_name,"-1-Coefs.csv", sep="")))
+  
+  FolderDestino = paste(diretorios$folderOutput, 
+                        "/Best", sep="")
+  if(dir.exists(FolderDestino)==FALSE){dir.create(FolderDestino)}
+  
+  f = 1
+  while(f<=number_folds){
+    best_fold = best[f,]
+    cat("\n", f, " - ", best_fold$metodo)
+    FolderOrigem = paste(diretorios$folderOutputDataset, 
+                         "/", best_fold$metodo, 
+                         "/Split-", f, "/*", sep="")
+    FolderD = paste(FolderDestino, "/Split-", f, sep="")
+    if(dir.exists(FolderD)==FALSE){dir.create(FolderD)}
+    
+    print(system(paste("cp -r ", FolderOrigem, " ", FolderD, sep="")))
+    
+    f = f + 1
+    gc()
+  }
+  
+  
+}
+
+
+
 
 #############################################################################
 # Please, any errors, contact us: elainececiliagatto@gmail.com              #

@@ -56,6 +56,8 @@ library("doParallel", quietly = TRUE)
 library("RColorBrewer", quietly = TRUE) 
 library("lattice", quietly = TRUE)
 library("cluster", quietly = TRUE)
+library("unikn")
+
 
 #############################################################################
 # Please, any errors, contact us: elainececiliagatto@gmail.com              #

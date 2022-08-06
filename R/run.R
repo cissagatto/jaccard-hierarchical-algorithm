@@ -113,7 +113,7 @@ executeJ <- function(ds,
                                                folderResults,
                                                resLS,
                                                namesLabels))
-
+  
   
   cat("\n\n#########################################################")
   cat("\n# RUN: Get partitions Jaccard                             #")
@@ -139,6 +139,33 @@ executeJ <- function(ds,
                                              folderResults,
                                              namesLabels,
                                              resLS))
+  
+  
+  cat("\n\n#########################################################")
+  cat("\n# RUN: analisa partições                                 #")
+  cat("\n###########################################################\n\n")
+  timeST = system.time(resST <- analisaParticoes(ds,
+                                                dataset_name,
+                                                number_dataset, 
+                                                number_cores, 
+                                                number_folds, 
+                                                folderResults,
+                                                namesLabels,
+                                                resLS))
+  
+  
+  cat("\n\n#########################################################")
+  cat("\n# RUN: analisa partições                                 #")
+  cat("\n###########################################################\n\n")
+  timeST = system.time(resST <- separaBests(ds,
+                                                 dataset_name,
+                                                 number_dataset, 
+                                                 number_cores, 
+                                                 number_folds, 
+                                                 folderResults,
+                                                 namesLabels,
+                                                 resLS))
+  
   
   
   cat("\n\n##########################################################")

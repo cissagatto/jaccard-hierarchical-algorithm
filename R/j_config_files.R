@@ -78,7 +78,7 @@ while(i<=n){
   # write("Dataset_Path, \"/home/u704616/Datasets\"",
   #       file = output.file, append = TRUE)
 
-  write("Dataset_Path, /home/cissa/Datasets",
+  write("Dataset_Path, /home/elaine/Datasets",
         file = output.file, append = TRUE)
 
   # job name
@@ -110,7 +110,7 @@ while(i<=n){
   write("number_folds, 10", file = output.file, append = TRUE)
 
   # Number of cores to use for parallel processing
-  write("number_cores, 1", file = output.file, append = TRUE)
+  write("number_cores, 10", file = output.file, append = TRUE)
 
   # finish writing to the configuration file
   close(output.file)
